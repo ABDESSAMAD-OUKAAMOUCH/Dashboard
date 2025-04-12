@@ -1,0 +1,49 @@
+<resources>
+    <string name="app_name">Dashboard</string>
+    <string name="text1">Welcome back!</string>
+    <string name="text11">Join With Us</string>
+    <string name="text2">sign in and Enjoy Latest Offers</string>
+    <string name="text22">sign up and Enjoy Latest Offers</string>
+    <string name="emailAddress">Email Address</string>
+    <string name="password">Password</string>
+    <string name="FirstName">First name</string>
+    <string name="Last_name">Last name</string>
+    <string name="Phone">Phone</string>
+    <string name="forgetPassword">Forget Password</string>
+    <string name="log_in">Log in</string>
+    <string name="or">OR</string>
+    <string name="google">Continue with Google</string>
+    <string name="facebook">Continue with Facebook</string>
+    <string name="sign_up">"Don't Have an Account?"</string>
+    <string name="sign_in">I already have account.</string>
+    <string name="signUp">Join us</string>
+    <string name="signUpButton">Sign Up</string>
+    <string name="signIn">Sign In</string>
+    <string name="Enter_Code">Enter Code</string>
+    <string name="Didnt_received_a_code">Didn’t received a code?</string>
+    <string name="Continue">Continue</string>
+    <string name="sent_on_email1">We’ve sent on email to</string>
+    <string name="sent_on_email2">y****@gmail.com</string>
+    <string name="Resend">Resend</string>
+    <string name="Verify_Your_Identity">Verify Your Identity</string>
+    <string name="Enter_your_email">Enter your email to receive reset Code</string>
+    <string name="Enter_your_New_Password">Enter your New Password</string>
+    <string name="New_Password">New Password</string>
+    <string name="Confirm_New_Password">Confirm New Password</string>
+    <string name="Finish">Finish</string>
+    <string name="SelectLocation">Select a location</string>
+    <string name="Use_current_location">Use current location</string>
+    <string name="Search_area_street_name">Search, area street name </string>
+    <string name="Find_restaurants">Find restaurants near you! </string>
+    <string name="location">Pizza is an Italian food that was created in Italy (The Naples area). It is made with different toppings. Some of the most common toppings are cheese, sausages, pepperoni, vegetaes   tomatoes, spices and herbs and basil.</string>
+    <string name="Search">Search…</string>
+    <string name="Restaurants_near_you">Restaurants near you</string>
+    <string name="categories">Categories</string>
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
+    <string name="facebook_app_id">1841764199692240</string>
+    <string name="fb_login_protocol_scheme">fb1841764199692240</string>
+    <string name="facebook_client_token">ff21d55af94a7dedbc0c00987be11515</string>
+    <string name="popular">Popular</string>
+
+</resources>

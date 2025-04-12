@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+    <color name="orange">#FB761F</color>
+    <color name="gray">#808080</color>
+    <color name="gray1">#C4C4C4</color>
+    <color name="stroke">#EEEEEE</color>
+    <color name="Imperial_red">#F62E33</color>
+    <color name="Mikado_yellow">#FFC71C</color>
+    <color name="Raspberry">#D60457</color>
+    <color name="Murrey">#A7055C</color>
+</resources>
