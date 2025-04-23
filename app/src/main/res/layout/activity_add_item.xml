@@ -79,36 +79,33 @@
             android:background="@drawable/edittext1" />
 
         <!-- Item Image with Add Icon -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            android:orientation="horizontal"
-            android:gravity="center_vertical"
-            android:background="@drawable/edittext1"
-            android:padding="8dp">
 
-            <TextView
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="Item Image" />
+        <LinearLayout
+            android:id="@+id/imageUploadSection"
+            android:layout_width="match_parent"
+            android:layout_height="120dp"
+            android:layout_marginTop="8dp"
+            android:background="@drawable/edittext1"
+            android:gravity="center"
+            android:orientation="vertical">
 
             <ImageView
-                android:layout_width="40dp"
-                android:layout_height="40dp"
-                android:src="@drawable/pluscircle"
-                android:contentDescription="Add Image" />
-        </LinearLayout>
+                android:id="@+id/itemImage"
+                android:layout_width="60dp"
+                android:layout_height="60dp"
+                android:src="@drawable/pizza2"
+                android:scaleType="centerCrop"
+                android:layout_gravity="center"
+                android:padding="4dp" />
 
-        <!-- Image Preview -->
-        <ImageView
-            android:id="@+id/imgPreview"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:scaleType="centerCrop"
-            android:layout_marginTop="12dp"
-            android:src="@drawable/pizza2" /> <!-- صورة توضيحية -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Upload Image"
+                android:textSize="14sp"
+                android:textColor="#888"
+                android:layout_marginTop="4dp" />
+        </LinearLayout>
 
         <!-- Short Description -->
         <EditText
@@ -121,19 +118,6 @@
             android:background="@drawable/edittext1"
             android:padding="12dp" />
 
-        <!-- Ingredients -->
-        <EditText
-            android:id="@+id/etIngredients"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:hint="Ingredients"
-            android:layout_marginTop="16dp"
-            android:minLines="4"
-            android:background="@drawable/edittext1"
-            android:padding="12dp"
-            android:text="- Noodle\n- Salad\n- Burger\n- Herbal Pan Cake\n- Momos" />
-
-        <!-- Submit Button -->
         <Button
             android:id="@+id/btnAddItem"
             android:layout_width="wrap_content"
