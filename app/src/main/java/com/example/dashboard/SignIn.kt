@@ -35,14 +35,15 @@ import com.google.firebase.auth.FacebookAuthProvider
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.GoogleAuthProvider
+import com.google.firebase.firestore.FirebaseFirestore
 
 class SignIn : AppCompatActivity() {
-    var pressedTime:Long=0
-    var passwordShowing=false
-    var mAuth:FirebaseAuth?=null
-    var TAG="SignIn"
+    var pressedTime: Long = 0
+    var passwordShowing = false
+    var mAuth: FirebaseAuth? = null
+    var TAG = "SignIn"
     lateinit var callbackManager: CallbackManager
-    private lateinit var googleSignInClient : GoogleSignInClient
+    private lateinit var googleSignInClient: GoogleSignInClient
     lateinit var binding: ActivitySignInBinding
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -56,7 +57,7 @@ class SignIn : AppCompatActivity() {
             startActivity(intent)
         }
         binding.passwordIcon.setOnClickListener {
-            passwordShowing=!passwordShowing
+            passwordShowing = !passwordShowing
             passwordIcon(passwordShowing)
         }
         binding.forgetPassword.setOnClickListener {
@@ -64,67 +65,117 @@ class SignIn : AppCompatActivity() {
             startActivity(intent)
         }
         binding.signinwithFacebook.setOnClickListener {
-            LoginManager.getInstance().logInWithReadPermissions(this, listOf("public_profile", "email"))
+            LoginManager.getInstance()
+                .logInWithReadPermissions(this, listOf("public_profile", "email"))
         }
 
         // Callback registration
-        LoginManager.getInstance().registerCallback(callbackManager, object : FacebookCallback<LoginResult> {
-            override fun onSuccess(loginResult: LoginResult) {
-                Toast.makeText(this@SignIn, "Success Login", Toast.LENGTH_LONG).show()
-                handleFacebookAccessToken(loginResult.accessToken)
-                // Get User's Info
-            }
+        LoginManager.getInstance()
+            .registerCallback(callbackManager, object : FacebookCallback<LoginResult> {
+                override fun onSuccess(loginResult: LoginResult) {
+                    Toast.makeText(this@SignIn, "Success Login", Toast.LENGTH_LONG).show()
+                    handleFacebookAccessToken(loginResult.accessToken)
+                    // Get User's Info
+                }
 
-            override fun onCancel() {
-                Toast.makeText(this@SignIn, "Login Cancelled", Toast.LENGTH_LONG).show()
-            }
+                override fun onCancel() {
+                    Toast.makeText(this@SignIn, "Login Cancelled", Toast.LENGTH_LONG).show()
+                }
 
-            override fun onError(exception: FacebookException) {
-                Toast.makeText(this@SignIn, exception.message, Toast.LENGTH_LONG).show()
-            }
-        })
+                override fun onError(exception: FacebookException) {
+                    Toast.makeText(this@SignIn, exception.message, Toast.LENGTH_LONG).show()
+                }
+            })
         binding.logIn.setOnClickListener {
 
-            if (binding.emailAddress.text.isEmpty()){
-                binding.emailAddress.error="enter your email"
-            }
-            else if (binding.password.text.isEmpty()) {
-                binding.password.error="enter your password"
-            }
-            else{
+            if (binding.emailAddress.text.isEmpty()) {
+                binding.emailAddress.error = "enter your email"
+            } else if (binding.password.text.isEmpty()) {
+                binding.password.error = "enter your password"
+            } else {
                 val mProgressDialog = ProgressDialog(this)
                 mProgressDialog.setMessage("Loading...")
                 mProgressDialog.setCanceledOnTouchOutside(false)
                 mProgressDialog.show()
+
                 mAuth?.signInWithEmailAndPassword(
                     binding.emailAddress.text.toString(),
                     binding.password.text.toString()
-                )?.addOnCompleteListener {
-                    if (it.isSuccessful) {
-                        var user = mAuth?.currentUser
-                        if (user!!.isEmailVerified) {
-                            mProgressDialog.dismiss()
-                            var intent = Intent(this, Home::class.java)
-                            startActivity(intent)
+                )
+                    ?.addOnCompleteListener { task ->
+                        if (task.isSuccessful) {
+                            val user = mAuth?.currentUser
+                            if (user != null && user.isEmailVerified) {
+                                val db = FirebaseFirestore.getInstance()
+
+                                // البحث عن admin الذي يملك هذا الإيميل
+                                db.collection("admins")
+                                    .whereEqualTo("email", binding.emailAddress.text.toString())
+                                    .get()
+                                    .addOnSuccessListener { adminQuery ->
+                                        if (!adminQuery.isEmpty) {
+                                            val adminDoc = adminQuery.documents[0]
+                                            val adminId = adminDoc.id
+
+                                            // الآن نبحث عن المطعم داخل admin هذا
+                                            db.collection("admins")
+                                                .document(adminId)
+                                                .collection("restaurants")
+                                                .get()
+                                                .addOnSuccessListener { restaurantQuery ->
+                                                    if (!restaurantQuery.isEmpty) {
+                                                        val restaurantDoc =
+                                                            restaurantQuery.documents[0]
+                                                        val restaurantId = restaurantDoc.id
+
+                                                        // حفظ البيانات في SharedPreferences
+                                                        val prefs = getSharedPreferences(
+                                                            "RestaurantPrefs",
+                                                            MODE_PRIVATE
+                                                        )
+                                                        prefs.edit().apply {
+                                                            putString("adminId", adminId)
+                                                            putString("restaurantId", restaurantId)
+                                                            apply()
+                                                        }
+
+                                                        startActivity(
+                                                            Intent(
+                                                                this,
+                                                                Home::class.java
+                                                            )
+                                                        )
+                                                        finish()
+                                                    } else {
+                                                        Toast.makeText(
+                                                            this,
+                                                            "No restaurant found.",
+                                                            Toast.LENGTH_SHORT
+                                                        ).show()
+                                                    }
+                                                }
+                                        } else {
+                                            Toast.makeText(
+                                                this,
+                                                "Admin not found.",
+                                                Toast.LENGTH_SHORT
+                                            ).show()
+                                        }
+                                    }
+                            } else {
+                                Toast.makeText(
+                                    this,
+                                    "Please verify your email.",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            }
                         } else {
-                            mProgressDialog.dismiss()
-                            Toast.makeText(
-                                this,
-                                "Please verify your account...",
-                                Toast.LENGTH_SHORT
-                            ).show();
+                            Toast.makeText(this, "Login failed.", Toast.LENGTH_SHORT).show()
                         }
-                    }else{
-                        mProgressDialog.dismiss()
-                        Toast.makeText(
-                            this,
-                            "your email or your password is incorrect",
-                            Toast.LENGTH_SHORT
-                        ).show();
                     }
-                }
             }
         }
+
 
         val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
             .requestIdToken(getString(R.string.default_web_client_id))
@@ -137,6 +188,7 @@ class SignIn : AppCompatActivity() {
             signInGoogle()
         }
     }
+
     private fun handleFacebookAccessToken(token: AccessToken) {
         Log.d(TAG, "handleFacebookAccessToken:$token")
 
@@ -157,12 +209,13 @@ class SignIn : AppCompatActivity() {
                 }
             }
     }
-    private fun passwordIcon(isShow:Boolean){
-        if(isShow){
-            binding.password.transformationMethod=HideReturnsTransformationMethod.getInstance()
+
+    private fun passwordIcon(isShow: Boolean) {
+        if (isShow) {
+            binding.password.transformationMethod = HideReturnsTransformationMethod.getInstance()
             binding.passwordIcon.setImageResource(R.drawable.open)
-        }else{
-            binding.password.transformationMethod=PasswordTransformationMethod.getInstance()
+        } else {
+            binding.password.transformationMethod = PasswordTransformationMethod.getInstance()
             binding.passwordIcon.setImageResource(R.drawable.closed)
         }
         binding.password.setSelection(binding.password.text.length)
@@ -175,42 +228,42 @@ class SignIn : AppCompatActivity() {
         callbackManager.onActivityResult(requestCode, resultCode, data)
     }
 
-    private fun signInGoogle(){
+    private fun signInGoogle() {
         val signInIntent = googleSignInClient.signInIntent
         launcher.launch(signInIntent)
     }
 
-    private val launcher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()){
-            result ->
-        if (result.resultCode == Activity.RESULT_OK){
+    private val launcher =
+        registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+            if (result.resultCode == Activity.RESULT_OK) {
 
-            val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
-            handleResults(task)
+                val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
+                handleResults(task)
+            }
         }
-    }
 
 
     private fun handleResults(task: Task<GoogleSignInAccount>) {
-        if (task.isSuccessful){
-            val account : GoogleSignInAccount? = task.result
-            if (account != null){
+        if (task.isSuccessful) {
+            val account: GoogleSignInAccount? = task.result
+            if (account != null) {
                 updateUI(account)
             }
-        }else{
-            Toast.makeText(this, task.exception.toString() , Toast.LENGTH_SHORT).show()
+        } else {
+            Toast.makeText(this, task.exception.toString(), Toast.LENGTH_SHORT).show()
         }
     }
 
     private fun updateUI(account: GoogleSignInAccount) {
-        val credential = GoogleAuthProvider.getCredential(account.idToken , null)
+        val credential = GoogleAuthProvider.getCredential(account.idToken, null)
         mAuth?.signInWithCredential(credential)?.addOnCompleteListener {
-            if (it.isSuccessful){
-                val intent : Intent = Intent(this , Home::class.java)
-                intent.putExtra("email" , account.email)
-                intent.putExtra("name" , account.displayName)
+            if (it.isSuccessful) {
+                val intent: Intent = Intent(this, Home::class.java)
+                intent.putExtra("email", account.email)
+                intent.putExtra("name", account.displayName)
                 startActivity(intent)
-            }else{
-                Toast.makeText(this, it.exception.toString() , Toast.LENGTH_SHORT).show()
+            } else {
+                Toast.makeText(this, it.exception.toString(), Toast.LENGTH_SHORT).show()
 
             }
         }
@@ -218,14 +271,13 @@ class SignIn : AppCompatActivity() {
 
 
     override fun onBackPressed() {
-        if(pressedTime+2000>System.currentTimeMillis()) {
+        if (pressedTime + 2000 > System.currentTimeMillis()) {
             super.onBackPressed()
             finish()
-        }
-        else {
+        } else {
             Toast.makeText(this, "Press back again to exit", Toast.LENGTH_SHORT).show();
         }
-        pressedTime=System.currentTimeMillis()
+        pressedTime = System.currentTimeMillis()
     }
 
 
@@ -319,7 +371,6 @@ class SignIn : AppCompatActivity() {
                 }
             }).executeAsync()
     }
-
 
 
 }

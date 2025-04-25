@@ -6,6 +6,7 @@ import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.os.Bundle
+import android.util.Log
 import android.widget.ArrayAdapter
 import android.widget.Button
 import android.widget.EditText
@@ -13,8 +14,10 @@ import android.widget.ImageView
 import android.widget.Spinner
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import java.io.ByteArrayOutputStream
+import java.io.InputStream
 import java.util.Base64
 
 class AddItem : AppCompatActivity() {
@@ -58,14 +61,19 @@ class AddItem : AppCompatActivity() {
 
     private fun loadCategories() {
         val sharedPreferences = getSharedPreferences("RestaurantPrefs", Context.MODE_PRIVATE)
-        val restaurantId = sharedPreferences.getString("restaurantId", null)
-
-        if (restaurantId == null) {
+        val restaurantId = sharedPreferences.getString("restaurantId", null) ?: run {
             Toast.makeText(this, "Restaurant ID not found", Toast.LENGTH_SHORT).show()
             return
         }
 
+        val adminId = sharedPreferences.getString("adminId", null) ?: run {
+            Toast.makeText(this, "Admin ID not found", Toast.LENGTH_SHORT).show()
+            return
+        }
+
         FirebaseFirestore.getInstance()
+            .collection("admins")
+            .document(adminId)
             .collection("restaurants")
             .document(restaurantId)
             .collection("categories")
@@ -74,75 +82,124 @@ class AddItem : AppCompatActivity() {
                 categoryList.clear()
                 categoryIdList.clear()
 
-                for (doc in snapshot) {
+                for (doc in snapshot.documents) {
                     val categoryName = doc.getString("name") ?: continue
                     categoryList.add(categoryName)
                     categoryIdList.add(doc.id)
+                }
+
+                if (categoryList.isEmpty()) {
+                    Toast.makeText(this, "No categories found", Toast.LENGTH_SHORT).show()
                 }
 
                 val adapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, categoryList)
                 adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
                 categorySpinner.adapter = adapter
             }
-            .addOnFailureListener {
-                Toast.makeText(this, "Failed to load categories", Toast.LENGTH_SHORT).show()
+            .addOnFailureListener { e ->
+                Toast.makeText(this, "Failed to load categories: ${e.localizedMessage}", Toast.LENGTH_SHORT).show()
+                Log.e("LoadCategories", "Error loading categories", e)
             }
     }
 
-
     private fun addItemToFirestore() {
-        val itemName = itemNameEditText.text.toString()
-        val price = itemPriceEditText.text.toString().toDoubleOrNull() ?: 0.0
-        val description = itemDescriptionEditText.text.toString()
+        val itemName = itemNameEditText.text.toString().trim()
+        if (itemName.isEmpty()) {
+            Toast.makeText(this, "Please enter item name", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        val price = itemPriceEditText.text.toString().toDoubleOrNull() ?: run {
+            Toast.makeText(this, "Invalid price", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        val description = itemDescriptionEditText.text.toString().trim()
+        if (description.isEmpty()) {
+            Toast.makeText(this, "Please enter description", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        if (base64Image.isEmpty()) {
+            Toast.makeText(this, "Please select an image", Toast.LENGTH_SHORT).show()
+            return
+        }
 
         val selectedCategoryIndex = categorySpinner.selectedItemPosition
         if (selectedCategoryIndex < 0 || selectedCategoryIndex >= categoryIdList.size) {
-            Toast.makeText(this, "Invalid category selected", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "Please select a valid category", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        val sharedPreferences = getSharedPreferences("RestaurantPrefs", Context.MODE_PRIVATE)
+        val restaurantId = sharedPreferences.getString("restaurantId", null) ?: run {
+            Toast.makeText(this, "Restaurant ID not found", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        val adminId = sharedPreferences.getString("adminId", null) ?: run {
+            Toast.makeText(this, "Admin ID not found", Toast.LENGTH_SHORT).show()
             return
         }
 
         val categoryId = categoryIdList[selectedCategoryIndex]
 
-        val sharedPreferences = getSharedPreferences("RestaurantPrefs", Context.MODE_PRIVATE)
-        val restaurantId = sharedPreferences.getString("restaurantId", null)
-
         val itemData = hashMapOf(
             "itemName" to itemName,
             "price" to price,
             "description" to description,
-            "imageBase64" to base64Image
+            "imageBase64" to base64Image,
+            "timestamp" to FieldValue.serverTimestamp()
         )
 
-        if (restaurantId != null) {
-            FirebaseFirestore.getInstance()
-                .collection("restaurants")
-                .document(restaurantId)
-                .collection("categories")
-                .document(categoryId)
-                .collection("Items")
-                .add(itemData)
-                .addOnSuccessListener {
-                    Toast.makeText(this, "Item added", Toast.LENGTH_SHORT).show()
-                }
-                .addOnFailureListener {
-                    Toast.makeText(this, "Failed to add item", Toast.LENGTH_SHORT).show()
-                }
-        }else{
-            Toast.makeText(this, "Failed", Toast.LENGTH_SHORT).show()
-
-        }
+        FirebaseFirestore.getInstance()
+            .collection("admins")
+            .document(adminId)
+            .collection("restaurants")
+            .document(restaurantId)
+            .collection("categories")
+            .document(categoryId)
+            .collection("items") // يجب أن تكون الأحرف صغيرة لتجنب مشاكل التوافق
+            .add(itemData)
+            .addOnSuccessListener {
+                Toast.makeText(this, "Item added successfully", Toast.LENGTH_SHORT).show()
+                clearForm()
+            }
+            .addOnFailureListener { e ->
+                Toast.makeText(this, "Failed to add item: ${e.localizedMessage}", Toast.LENGTH_SHORT).show()
+                Log.e("AddItem", "Error adding item", e)
+            }
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
-        if (requestCode == IMAGE_PICK_CODE && resultCode == Activity.RESULT_OK && data != null) {
-            val imageUri = data.data
-            uploadImageView.setImageURI(imageUri)
 
-            val inputStream = contentResolver.openInputStream(imageUri!!)
-            val bitmap = BitmapFactory.decodeStream(inputStream)
-            base64Image = encodeImageToBase64(bitmap)
+        if (requestCode == IMAGE_PICK_CODE && resultCode == Activity.RESULT_OK) {
+            val imageUri = data?.data ?: run {
+                Toast.makeText(this, "Invalid image selected", Toast.LENGTH_SHORT).show()
+                return
+            }
+
+            var inputStream: InputStream? = null
+            try {
+                inputStream = contentResolver.openInputStream(imageUri)
+                val bitmap = BitmapFactory.decodeStream(inputStream)
+                uploadImageView.setImageURI(imageUri)
+                base64Image = encodeImageToBase64(bitmap)
+            } catch (e: Exception) {
+                Toast.makeText(this, "Error processing image", Toast.LENGTH_SHORT).show()
+                Log.e("ImageProcessing", "Error processing image", e)
+            } finally {
+                inputStream?.close()
+            }
         }
+    }
+
+    private fun clearForm() {
+        itemNameEditText.text.clear()
+        itemPriceEditText.text.clear()
+        itemDescriptionEditText.text.clear()
+        base64Image = ""
     }
 
     private fun encodeImageToBase64(bitmap: Bitmap): String {

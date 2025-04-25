@@ -42,12 +42,15 @@ class AddCategorie : AppCompatActivity() {
                     "imageBase64" to base64Image
                 )
 
-                // استرجاع restaurantId من SharedPreferences
+                // استرجاع adminId و restaurantId من SharedPreferences
                 val sharedPreferences = getSharedPreferences("RestaurantPrefs", MODE_PRIVATE)
+                val adminId = sharedPreferences.getString("adminId", null)
                 val restaurantId = sharedPreferences.getString("restaurantId", null)
 
-                if (restaurantId != null) {
+                if (adminId != null && restaurantId != null) {
                     FirebaseFirestore.getInstance()
+                        .collection("admins")
+                        .document(adminId)
                         .collection("restaurants")
                         .document(restaurantId)
                         .collection("categories")
@@ -59,15 +62,13 @@ class AddCategorie : AppCompatActivity() {
                             Toast.makeText(this, "فشل في إضافة الفئة", Toast.LENGTH_SHORT).show()
                         }
                 } else {
-                    Toast.makeText(this, "لم يتم العثور على معرّف المطعم", Toast.LENGTH_SHORT)
-                        .show()
+                    Toast.makeText(this, "تعذر استرجاع adminId أو restaurantId", Toast.LENGTH_SHORT).show()
                 }
             } else {
                 Toast.makeText(this, "يرجى اختيار صورة وملء الاسم", Toast.LENGTH_SHORT).show()
             }
-
-
         }
+
     }
     fun convertImageToBase64(uri: Uri): String {
         val inputStream = contentResolver.openInputStream(uri)

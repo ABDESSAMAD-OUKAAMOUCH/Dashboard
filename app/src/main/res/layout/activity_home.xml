@@ -144,6 +144,7 @@
     </LinearLayout>
 
     <LinearLayout
+        android:id="@+id/logout"
         android:layout_width="140dp"
         android:layout_height="100dp"
         android:layout_marginTop="24dp"

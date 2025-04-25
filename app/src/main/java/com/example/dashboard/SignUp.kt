@@ -9,6 +9,7 @@ import android.os.Bundle
 import android.provider.MediaStore
 import android.text.method.HideReturnsTransformationMethod
 import android.text.method.PasswordTransformationMethod
+import android.util.Log
 import android.widget.Button
 import android.widget.TextView
 import android.widget.Toast
@@ -59,94 +60,109 @@ class SignUp : AppCompatActivity() {
             passwordIcon(passwordShowing)
         }
         binding.signUp.setOnClickListener {
-            val restaurantName = binding.firstname.text.toString()
+            val name = binding.name.text.toString()
+            val phone = binding.phone.text.toString()
+            val email = binding.emailAddress.text.toString()
+            val password = binding.password.text.toString()
+            val restaurantName = binding.lastname.text.toString()
             val url = binding.url.text.toString()
             val urlImage = binding.imageUploadSection.text.toString()
-            if (binding.imageUploadSection.text.isNotEmpty() && restaurantName.isNotEmpty() && url.isNotEmpty() &&
-                binding.emailAddress.text.isNotEmpty() && binding.firstname.text.isNotEmpty() && binding.lastname.text.isNotEmpty() &&
-                binding.phone.text.isNotEmpty() && binding.password.text.isNotEmpty()
+
+            if (name.isNotEmpty() && phone.isNotEmpty() && email.isNotEmpty() && password.isNotEmpty()
+                && restaurantName.isNotEmpty() && url.isNotEmpty() && urlImage.isNotEmpty()
             ) {
-
-                val restaurantData = hashMapOf(
-                    "restaurantName" to restaurantName,
-                    "restaurantUrl" to url,
-                    "imageBase64" to urlImage,
-                    "placeholder" to true
-                )
-
-                FirebaseFirestore.getInstance()
-                    .collection("restaurants")
-                    .add(restaurantData)
-                    .addOnSuccessListener { documentReference ->
-                        val restaurantId = documentReference.id
-
-                        // ✅ تخزين restaurantId في SharedPreferences
-                        val sharedPreferences = getSharedPreferences("RestaurantPrefs", MODE_PRIVATE)
-                        val editor = sharedPreferences.edit()
-                        editor.putString("restaurantId", restaurantId)
-                        editor.apply()
-
-                        // ✅ إنشاء Collection "orders" مع وثيقة مؤقتة
-                        val placeholderOrder = hashMapOf(
-                            "note" to "عنصر مؤقت - يمكن حذفه لاحقًا"
-                        )
-                        documentReference.collection("orders")
-                            .document("placeholder")
-                            .set(placeholderOrder)
-                            .addOnSuccessListener {
-                                Toast.makeText(this, "Restaurant Uploaded", Toast.LENGTH_SHORT).show()
-                            }
-                            .addOnFailureListener {
-                                Toast.makeText(this, "Restaurant uploaded but failed to create orders.", Toast.LENGTH_SHORT).show()
-                            }
-                    }
-                    .addOnFailureListener {
-                        Toast.makeText(this, "Upload failed!", Toast.LENGTH_SHORT).show()
-                    }
-
                 val mProgressDialog = ProgressDialog(this)
                 mProgressDialog.setMessage("Loading...")
                 mProgressDialog.setCanceledOnTouchOutside(false)
                 mProgressDialog.show()
-                mAut?.createUserWithEmailAndPassword(
-                    binding.emailAddress.text.toString(),
-                    binding.password.text.toString()
-                )?.addOnCompleteListener {
+
+                mAut?.createUserWithEmailAndPassword(email, password)?.addOnCompleteListener {
                     if (it.isSuccessful) {
-                        var user = mAut?.currentUser
-                        user?.sendEmailVerification()?.addOnCompleteListener {
-                            if (it.isSuccessful) {
-                                mProgressDialog.dismiss()
-                                Toast.makeText(
-                                    this,
-                                    "account created,\n check your email for verify your account",
-                                    Toast.LENGTH_SHORT
-                                ).show()
-                                var intent = Intent(this, SignIn::class.java)
-                                startActivity(intent)
+                        val user = mAut?.currentUser
+
+                        user?.sendEmailVerification()?.addOnCompleteListener { verifyTask ->
+                            if (verifyTask.isSuccessful) {
+                                val adminData = hashMapOf(
+                                    "name" to name,
+                                    "phone" to phone,
+                                    "email" to email
+                                )
+
+                                FirebaseFirestore.getInstance()
+                                    .collection("admins")
+                                    .add(adminData)
+                                    .addOnSuccessListener { adminRef ->
+                                        val adminId = adminRef.id
+
+                                        val restaurantData = hashMapOf(
+                                            "restaurantName" to restaurantName,
+                                            "restaurantUrl" to url,
+                                            "imageBase64" to urlImage,
+                                            "placeholder" to true
+                                        )
+
+                                        adminRef.collection("restaurants")
+                                            .add(restaurantData)
+                                            .addOnSuccessListener { restaurantRef ->
+                                                val restaurantId = restaurantRef.id
+
+                                                val sharedPreferences = getSharedPreferences("RestaurantPrefs", MODE_PRIVATE)
+                                                sharedPreferences.edit()
+                                                    .putString("adminId", adminId)  // 👈 حفظ adminId
+                                                    .putString("restaurantId", restaurantId)
+                                                    .apply()
+
+                                                val placeholderOrder = hashMapOf("note" to "عنصر مؤقت - يمكن حذفه لاحقًا")
+                                                restaurantRef.collection("orders")
+                                                    .document("placeholder")
+                                                    .set(placeholderOrder)
+                                                    .addOnSuccessListener {
+                                                        mProgressDialog.dismiss()
+                                                        Toast.makeText(this, "Account created & verified\nCheck your email", Toast.LENGTH_SHORT).show()
+                                                        startActivity(Intent(this, SignIn::class.java))
+                                                    }
+                                                    .addOnFailureListener {
+                                                        mProgressDialog.dismiss()
+                                                        Toast.makeText(this, "Restaurant added, failed to create order doc", Toast.LENGTH_SHORT).show()
+                                                    }
+                                            }
+                                            .addOnFailureListener {
+                                                mProgressDialog.dismiss()
+                                                Toast.makeText(this, "Failed to add restaurant", Toast.LENGTH_SHORT).show()
+                                            }
+                                    }
+                                    .addOnFailureListener {
+                                        mProgressDialog.dismiss()
+                                        Toast.makeText(this, "Failed to add admin", Toast.LENGTH_SHORT).show()
+                                    }
                             } else {
                                 mProgressDialog.dismiss()
-                                Toast.makeText(this, it.exception.toString(), Toast.LENGTH_SHORT)
-                                    .show();
+                                Toast.makeText(this, verifyTask.exception?.message ?: "Verification email failed", Toast.LENGTH_SHORT).show()
                             }
                         }
+
                     } else {
                         mProgressDialog.dismiss()
-                        Toast.makeText(this, it.exception.toString(), Toast.LENGTH_SHORT).show();
+                        Toast.makeText(this, it.exception?.message ?: "Sign-up failed", Toast.LENGTH_SHORT).show()
                     }
                 }
+
             } else {
-                Toast.makeText(this, "Empty", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "Please fill all fields", Toast.LENGTH_SHORT).show()
             }
         }
+
+
     }
 
     private fun passwordIcon(isShow: Boolean) {
         if (isShow) {
-            binding.password.transformationMethod = HideReturnsTransformationMethod.getInstance()
+            binding.password.transformationMethod =
+                HideReturnsTransformationMethod.getInstance()
             binding.passwordIcon.setImageResource(R.drawable.open)
         } else {
-            binding.password.transformationMethod = PasswordTransformationMethod.getInstance()
+            binding.password.transformationMethod =
+                PasswordTransformationMethod.getInstance()
             binding.passwordIcon.setImageResource(R.drawable.closed)
         }
         binding.password.setSelection(binding.password.text.length)
