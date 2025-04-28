@@ -12,5 +12,9 @@ data class UserOrder(
     val timestamp: Timestamp? = null,
     val status: String = "",
     val userName: String = "",
-    val userLocation: String = ""
+    val userLocation: String = "",
+    val quantity:Int=1,
+    val phone:String="",
+    val lat:Double=0.0,
+    val lng:Double=0.0
 )

@@ -59,4 +59,5 @@ dependencies {
     androidTestImplementation(libs.androidx.espresso.core)
     implementation(libs.facebook.login)
     implementation(libs.play.services.auth)
+    implementation (libs.github.glide)
 }

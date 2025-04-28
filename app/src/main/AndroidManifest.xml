@@ -23,6 +23,15 @@
         android:theme="@style/Theme.Dashboard"
         tools:targetApi="31">
         <activity
+            android:name=".AllItems"
+            android:exported="false" />
+        <activity
+            android:name=".AllCategories"
+            android:exported="false" />
+        <activity
+            android:name=".ProfileActivity"
+            android:exported="false" />
+        <activity
             android:name=".Orders"
             android:exported="false" />
         <activity

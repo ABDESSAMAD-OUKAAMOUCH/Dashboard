@@ -4,10 +4,6 @@ import android.content.Intent
 import android.os.Bundle
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.content.ContentProviderCompat.requireContext
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
-import com.example.dashboard.databinding.ActivityForgetPassword1Binding
 import com.example.dashboard.databinding.ActivityHomeBinding
 import com.google.firebase.auth.FirebaseAuth
 
@@ -27,6 +23,12 @@ class Home : AppCompatActivity() {
         }
         binding.linearLayout4.setOnClickListener {
             startActivity(Intent(this,Orders::class.java))
+        }
+        binding.profile.setOnClickListener {
+            startActivity(Intent(this,ProfileActivity::class.java))
+        }
+        binding.linearLayout3.setOnClickListener {
+            startActivity(Intent(this,AllCategories::class.java))
         }
         binding.logout.setOnClickListener {
             binding.logout.setOnClickListener {

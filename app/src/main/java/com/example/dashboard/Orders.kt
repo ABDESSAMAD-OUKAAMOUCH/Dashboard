@@ -28,7 +28,7 @@ class Orders : AppCompatActivity() {
 
         recyclerView=findViewById(R.id.ordersRecyclerView)
         val ordersList = mutableListOf<UserOrder>()
-        val adapter = UserOrderAdapter(ordersList)
+        val adapter = UserOrderAdapter(this,ordersList)
         recyclerView.adapter = adapter
         recyclerView.layoutManager = LinearLayoutManager(this)
         val db = FirebaseFirestore.getInstance()
@@ -69,22 +69,41 @@ class Orders : AppCompatActivity() {
                                 val userName = userDoc.getString("fullName") ?: "Unknown"
                                 val locationMap = userDoc.get("location") as? Map<*, *>
                                 val userLocation = locationMap?.get("city")?.toString() ?: "No city"
+                                val latString = locationMap?.get("lat")?.toString()
+                                val lngString = locationMap?.get("lng")?.toString()
+                                val lat = latString?.toDoubleOrNull()
+                                val lng = lngString?.toDoubleOrNull()
+
+
+
 
                                 ordersDataMap[userId]?.forEach { data ->
-                                    val order = UserOrder(
-                                        orderId = data["orderId"] as String,
-                                        itemName = data["name"] as? String ?: "",
-                                        price = (data["price"] as? Number)?.toDouble() ?: 0.0,
-                                        imageBase64 = data["imageBase64"] as? String ?: "",
-                                        timestamp = data["timestamp"] as? Timestamp,
-                                        status = data["status"] as? String ?: "",
-                                        userName = userName,
-                                        userLocation = userLocation,
-                                        userId = userId // مرّر الـ userId هنا
+                                    val order = lat?.let {
+                                        lng?.let { it1 ->
+                                            UserOrder(
+                                                orderId = data["orderId"] as String,
+                                                itemName = data["name"] as? String ?: "",
+                                                price = (data["price"] as? Number)?.toDouble() ?: 0.0,
+                                                imageBase64 = data["imageBase64"] as? String ?: "",
+                                                timestamp = data["timestamp"] as? Timestamp,
+                                                status = data["status"] as? String ?: "",
+                                                userName = userName,
+                                                userLocation = userLocation,
+                                                quantity=(data["quantity"] as? Number)?.toInt() ?: 1,
+                                                phone = data["phone"] as? String ?: "",
+                                                lat = it.toDouble(),
+                                                lng = it1.toDouble(),
+                                                userId = userId // مرّر الـ userId هنا
 
-                                    )
-                                    tempOrders.add(order)
-                                    Log.d("DEBUG", "Updating user order: userId=$userId, orderId=${order.orderId}")
+                                            )
+                                        }
+                                    }
+                                    if (order != null) {
+                                        tempOrders.add(order)
+                                    }
+                                    if (order != null) {
+                                        Log.d("DEBUG", "Updating user order: userId=$userId, orderId=${order.orderId}")
+                                    }
 
                                 }
 

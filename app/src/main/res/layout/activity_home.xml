@@ -120,6 +120,7 @@
     </LinearLayout>
 
     <LinearLayout
+        android:id="@+id/profile"
         android:layout_width="140dp"
         android:layout_height="100dp"
         android:layout_marginStart="40dp"
