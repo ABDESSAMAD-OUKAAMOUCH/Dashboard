@@ -196,10 +196,10 @@ class AddItem : AppCompatActivity() {
     }
 
     private fun clearForm() {
-        itemNameEditText.text.clear()
-        itemPriceEditText.text.clear()
-        itemDescriptionEditText.text.clear()
-        base64Image = ""
+//        itemNameEditText.text.clear()
+//        itemPriceEditText.text.clear()
+//        itemDescriptionEditText.text.clear()
+//        base64Image = ""
     }
 
     private fun encodeImageToBase64(bitmap: Bitmap): String {
@@ -208,5 +208,4 @@ class AddItem : AppCompatActivity() {
         val imageBytes = outputStream.toByteArray()
         return android.util.Base64.encodeToString(imageBytes, android.util.Base64.DEFAULT)
     }
-
 }

@@ -46,7 +46,10 @@ class ProfileActivity : AppCompatActivity() {
                     if (document.exists()) {
                         binding.name.setText(document.getString("name"))
                         binding.email.setText(document.getString("email"))
+                        val email:String= document.getString("email").toString()
                         binding.phone.setText(document.getString("phone"))
+                        binding.p.text = email.takeIf { it.isNotEmpty() }?.substring(0, 1) ?: "?"
+
                     }
                 }
                 .addOnFailureListener {
